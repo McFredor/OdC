@@ -66,19 +66,51 @@ endl0:
 	// Infinite Loop
 
 	mov x0, x20                        		// map address
-    movz x1, 187, lsl 00                       // center position x
+    
+
+   
+
+	movz x10, 0x00FF, lsl 16
+	movk x10, 0xE500, lsl 00
+	movz x1, 212, lsl 00                       // center position x
+    movz x2, 343, lsl 00                       // center position y
+    movz x3, 268, lsl 00
+	movz x4, 384, lsl 00
+	bl TriangleRect
+
+	movz x1, 163, lsl 00                       // center position x
+    movz x2, 346, lsl 00                       // center position y
+    movz x3, 105, lsl 00
+	movz x4, 384, lsl 00
+	bl TriangleRect
+
+	movz x10, 0x00, lsl 00
+	movz x1, 190, lsl 00                       // center position x
+    movz x2, 145, lsl 00                       // center position y
+    movz x3, 291, lsl 00
+	movz x4, 289, lsl 00
+	bl TriangleRect
+
+	movz x1, 187, lsl 00                       // center position x
     movz x2, 296, lsl 00                       // center position y
     movz x3, 77, lsl 00
 	movz x10, 0, lsl 00
-    bl Circle
-
-
-    movz x2, 190, lsl 00                       // center position y
+    bl Circle 
+	
+	movz x2, 190, lsl 00                       // center position y
     movz x3, 46, lsl 00
 	bl Circle
 
 	movz x1, 187, lsl 00                       // center position x
     movz x2, 296, lsl 00                       // center position y
+    movz x3, 53, lsl 00
+	movz x10, 0x00FF, lsl 16
+	movk x10, 0xFFFF, lsl 00
+    bl Circle
+
+
+	movz x1, 100, lsl 00                       // center position x
+    movz x2, 200, lsl 00                       // center position y
     movz x3, 53, lsl 00
 	movz x10, 0x00FF, lsl 16
 	movk x10, 0xFFFF, lsl 00
@@ -122,16 +154,19 @@ CirLoop1:
 	add x8, x2, x4	//x8 -> Y0+X
 	bl CirSetPoint
 	sub x7, x1, x5	//x7 -> X0-Y
+	add x8, x2, x4	//x8 -> Y0+X
 	bl CirSetPoint
 	sub x7, x1, x4	//x7 -> X0-X
 	add x8, x2, x5	//x8 -> Y0+Y
 	bl CirSetPoint
+	sub x7, x1, x4	//x7 -> X0-X
 	sub x8, x2, x5	//x8 -> Y0-Y
 	bl CirSetPoint
 	sub x7, x1, x5	//x7 -> X0-Y
 	sub x8, x2, x4	//x8 -> Y0-X
 	bl CirSetPoint
 	add x7, x1, x5	//x7 -> X0+Y
+	sub x8, x2, x4	//x8 -> Y0-X
 	bl CirSetPoint
 	add x7, x1, x4	//x7 -> X0+X
 	sub x8, x2, x5	//x8 -> Y0-Y
@@ -160,7 +195,6 @@ Cir3:
 	ret
 
 CirSetPoint:
-	add x7, x7, 1
 	movz x9, 640, lsl 00
 	mul x9, x9, x8
 	add x9, x9, x7
@@ -168,46 +202,148 @@ CirSetPoint:
 	add x9, x9, x0
 	stur w10,[x9]
 
-	sub x7, x7, 2
-	movz x9, 640, lsl 00
-	mul x9, x9, x8
-	add x9, x9, x7
-	lsl x9, x9, 02
-	add x9, x9, x0
-	stur w10,[x9]
-
-	add x7, x7, 1
-	add x8, x8, 1 
-	movz x9, 640, lsl 00
-	mul x9, x9, x8
-	add x9, x9, x7
-	lsl x9, x9, 02
-	add x9, x9, x0
-	stur w10,[x9]
-
-	sub x8, x8, 2
-	movz x9, 640, lsl 00
-	mul x9, x9, x8
-	add x9, x9, x7
-	lsl x9, x9, 02
-	add x9, x9, x0
-	stur w10,[x9]
+	cmp x7, x1
+	sub x7, x7, 1
+	b.eq CirRet
+	b.hs CirSetPoint
+	add x7, x7, 2
+	b.lo CirSetPoint
+CirRet:
 	ret
 
 /********************************************************/
-/*              drawing a triangle-rectangle            */
+/*          drawing a triangle-rectangle                */
 /********************************************************/
 /* x0 ->directon del framebuffer 	*/
-/* x1,x2 ->position P1(X,Y)  		*/
-/* x3,x4 ->position P2(X,Y)		 	*/
+/* x1,x2 ->position P1(X0,Y0)  		*/
+/* x3,x4 ->position P2(X1,Y1)	 	*/
 /* x10->color						*/
 
-TriangleRec:
-	cmp x1, x3
-	movz x5, 1, lsl 00
-	b.mi tri0
-	sub x5, 2
-tri0:
-	
+TriangleRect:                      
+        sub  sp, sp, #64
+        stp  x29, x30, [sp, #48]             
+        add  x29, sp, #48
+        stur w0, [x29, #-4] 	//<- FrameBuffer 
+        stur w1, [x29, #-8] 	//<- X0 
+        stur w2, [x29, #-12]	//<- Y0 
+        stur w3, [x29, #-16]	//<- X1 
+        stur w4, [x29, #-20]	//<- Y1 
+		stur w10,[x29, #-24]	//<- Color 
+
+        subs w8, w3, w1
+        str  w8, [sp, #24]      //<-dX =X1-X0
+        mov  w8, w4
+        mov  w9, w2
+        subs w8, w8, w9
+        str  w8, [sp, #20]		//<-dY=Y1-Y0
+        mov  w8, w1
+        str  w8, [sp, #12]		//<-X=X0
+        mov  w8, w2
+        str  w8, [sp, #8]		//<-Y=Y0
+
+        ldr  w9, [sp, #20]                        
+        lsl  w8, w9, #1
+        ldr  w9, [sp, #24]
+        sub  w8, w8, w9
+        str  w8, [sp, #16]		//<-p=2*dY-dX
+		
+trir_1:                              
+        ldr  w8, [sp, #12]
+        ldur w9, [x29, #-16]
+        subs w8, w8, w9
+        cset w8, ge
+        tbnz w8, #0, trir_6                           
+
+        ldr  w8, [sp, #16]
+        subs w8, w8, #0
+        cset w8, lt
+
+        tbnz w8, #0, trir_4
+                              
+        ldur w0, [x29, #-4]
+        ldur w1, [x29, #-8]
+        ldr  w2, [sp, #12]
+        ldr  w3, [sp, #8]
+        bl   fill
+        ldr  w8, [sp, #8]
+        add  w8, w8, #1
+        str  w8, [sp, #8]
+        ldr  w8, [sp, #16]
+        ldr  w10, [sp, #20]
+        mov  w9, #2                         
+        mul  w10, w9, w10
+        add  w8, w8, w10
+        ldr  w10, [sp, #24]
+        mul  w9, w9, w10
+        subs w8, w8, w9
+        str  w8, [sp, #16]
+        b    trir_5
+trir_4:                              
+        ldur w0, [x29, #-4]
+        ldur w1, [x29, #-8]
+        ldr  w2, [sp, #12]
+        ldr  w3, [sp, #8]
+        bl   fill
+        ldr  w8, [sp, #16]
+        ldr  w10, [sp, #20]
+        mov  w9, #2                     
+        mul  w9, w9, w10
+        add  w8, w8, w9
+        str  w8, [sp, #16]
+        b    trir_5
+trir_5:                            
+        ldr  w8, [sp, #12]
+        add  w8, w8, #1
+        str  w8, [sp, #12]
+        b    trir_1
+trir_6:
+        ldp  x29, x30, [sp, #48]           
+        add  sp, sp, #64
+        ret
+
+
+Fill:
+        sub     sp, sp, #32
+        str     w0, [sp, #28]
+        str     w1, [sp, #24]
+        str     w2, [sp, #20]
+        str     w3, [sp, #16]
+fill_1: 
+        ldr     w8, [sp, #20]
+        ldr     w9, [sp, #24]
+        subs    w8, w8, w9
+        cset    w8, eq
+        tbnz    w8, #0, fill_5
+fill_2:                                
+        ldr     w8, [sp, #28]
+        ldr     w9, [sp, #20]
+        ldr     w10, [sp, #16]
+        mov     w11, #640                
+        mul     w10, w10, w11
+        add     w10, w9, w10
+        mov     w9, #4                        
+        mul     w9, w9, w10
+        add     w8, w8, w9
+        str     w8, [sp, #12]
+        ldr     w8, [sp, #12]
+        stur 	w13,[x8]
+        str     w8, [sp, #12]
+        ldr     w8, [sp, #20]
+        ldr     w9, [sp, #24]
+        subs    w8, w8, w9
+        cset    w8, ge
+        tbnz    w8, #0, fill_4
+        ldr     w8, [sp, #20]
+        add     w8, w8, #1
+        str     w8, [sp, #20]
+        b       fill_1
+fill_4:                            
+        ldr     w8, [sp, #20]
+        subs    w8, w8, #1
+        str     w8, [sp, #20]
+		b 		fill_1
+fill_5:
+        add     sp, sp, #32
+        ret
 
 
